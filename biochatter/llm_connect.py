@@ -24,6 +24,7 @@ from langchain_community.chat_models import ChatOllama
 from langchain_community.llms.huggingface_hub import HuggingFaceHub
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import AzureChatOpenAI, ChatOpenAI
+import litellm
 
 from ._image import encode_image, encode_image_from_url
 from ._stats import get_stats
@@ -1866,7 +1867,7 @@ class UnifiedConversation(Conversation):
                 
         return litellm_messages
     
-    def set_api_key(self, api_key, user = None):
+    def set_api_key(self, api_key: str, user: Union[str, None] = None) -> None:
         pass
 
     def _primary_query(self, text):
