@@ -1791,3 +1791,28 @@ class BloomConversation(Conversation):
 
     def _correct_response(self, msg: str) -> str:
         return "ok"
+
+class UnifiedConversation(Conversation):
+    def __init__(
+            self, 
+            model_name, 
+            prompts, correct = False, 
+            split_correction = False, 
+            use_ragagent_selector = False
+            ):
+        super().__init__(
+            model_name, 
+            prompts, 
+            correct, 
+            split_correction, 
+            use_ragagent_selector
+            )
+    
+    def set_api_key(self, api_key, user = None):
+        pass
+    
+    def _primary_query(self, text):
+        pass
+    
+    def _correct_response(self, msg):
+        pass
