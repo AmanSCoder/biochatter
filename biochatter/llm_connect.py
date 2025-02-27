@@ -9,7 +9,7 @@ import json
 import logging
 import urllib.parse
 from abc import ABC, abstractmethod
-from typing import Callable  # noqa: UP035
+from typing import Callable, Union, List, Dict  # noqa: UP035
 
 try:
     import streamlit as st
@@ -1793,26 +1793,84 @@ class BloomConversation(Conversation):
         return "ok"
 
 class UnifiedConversation(Conversation):
+    """A unified interface for multiple LLM models using LiteLLM.
+    
+    This class implements the abstract methods from the Conversation parent class
+    and provides a unified way to interact with different LLM providers through
+    LiteLLM, which supports models from OpenAI, Anthropic, HuggingFace, and more.
+    
+    Attributes:
+        model_name (str): The name of the model to use.
+        prompts (dict): Dictionary containing various prompts used in the conversation.
+        correct (bool): Whether to use a correcting agent.
+        split_correction (bool): Whether to split corrections by sentence.
+        rag_agents (list): List of RAG agents available for context enhancement.
+        history (list): Conversation history for logging/printing.
+        messages (list): Messages in the conversation.
+        ca_messages (list): Messages for the correcting agent.
+        api_key (str): API key for the LLM provider.
+        user (str): Username for the API, if required.
+        token_limit (int): Token limit for the model being used.
+    """
+
     def __init__(
-            self, 
-            model_name, 
-            prompts, correct = False, 
-            split_correction = False, 
-            use_ragagent_selector = False
-            ):
+        self,
+        model_name: str,
+        prompts: dict,
+        correct: bool = False,
+        split_correction: bool = False,
+        use_ragagent_selector: bool = False,
+    ) -> None:
+        """Initialize a UnifiedConversation instance.
+        
+        Args:
+            model_name (str): The name of the model to use.
+            prompts (dict): Dictionary containing various prompts used in the conversation.
+            correct (bool): Whether to use a correcting agent. Defaults to False.
+            split_correction (bool): Whether to split corrections by sentence. Defaults to False.
+            use_ragagent_selector (bool): Whether to use RagAgentSelector. Defaults to False.
+        """
         super().__init__(
-            model_name, 
-            prompts, 
-            correct, 
-            split_correction, 
-            use_ragagent_selector
-            )
+            model_name=model_name,
+            prompts=prompts,
+            correct=correct,
+            split_correction=split_correction,
+            use_ragagent_selector=use_ragagent_selector,
+        )
+        self.api_key = None
+        self.user = None
+        self.token_limit = self._get_token_limit(model_name)
+        
+    def _convert_messages_to_litellm_format(self, messages: List[Union[SystemMessage, HumanMessage, AIMessage]]) -> List[Dict[str, str]]:
+        """Convert langchain message format to LiteLLM format.
+        
+        Args:
+            messages (List[Union[SystemMessage, HumanMessage, AIMessage]]): The messages to convert.
+            
+        Returns:
+            List[Dict[str, str]]: Messages in LiteLLM format.
+        """
+        litellm_messages = []
+        
+        for msg in messages:
+            if isinstance(msg, SystemMessage):
+                litellm_messages.append({"role": "system", "content": msg.content})
+            elif isinstance(msg, HumanMessage):
+                litellm_messages.append({"role": "user", "content": msg.content})
+            elif isinstance(msg, AIMessage):
+                litellm_messages.append({"role": "assistant", "content": msg.content})
+            else:
+                error_msg = f"Unknown message type: {type(msg)}"
+                logger.error(error_msg)
+                raise TypeError(error_msg)
+                
+        return litellm_messages
     
     def set_api_key(self, api_key, user = None):
         pass
-    
+
     def _primary_query(self, text):
         pass
-    
+
     def _correct_response(self, msg):
         pass
